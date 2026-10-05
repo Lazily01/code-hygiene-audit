@@ -32,7 +32,7 @@ git clone https://github.com/Lazily01/code-hygiene-audit.git ~/.agents/skills/co
 
 ## 搭配使用
 
-- 写新代码前用 [ponytail-lazy-dev](https://github.com/) 的决策梯子管住「少生」；
+- 写新代码前用 ponytail-lazy-dev 这类「决策梯子」Skill 管住「少生」（YAGNI→复用→标准库→原生→一行→最小实现）；
 - 本 Skill 管「善杀」。一个管进嘴的，一个管排队的。
 
 ## License
