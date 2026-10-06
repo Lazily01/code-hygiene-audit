@@ -60,6 +60,25 @@ git clone https://github.com/Lazily01/scavenger.git .gemini/skills/scavenger
 
 ---
 
-## 7. 通用 Agent 与其他工具 (Codex, Devin, OpenCode 等)
+## 7. 作为原生 MCP 服务端挂载 (Model Context Protocol)
+
+如果你想让 AI 直接拥有专属的扫描工具按钮（调用 `scavenger_scan_dead_code`、`scavenger_scan_token_drift`、`scavenger_check_truth_split` 等）：
+
+无需任何 npm 安装，直接使用本地 Node.js 启动：
+```json
+{
+  "mcpServers": {
+    "scavenger": {
+      "command": "node",
+      "args": ["/你的绝对路径/scavenger/mcp/index.js"]
+    }
+  }
+}
+```
+支持 **Claude Code (`claude mcp add`)**、**Cursor MCP**、**Windsurf MCP** 及 **Claude Desktop**。详见 [`mcp/README.md`](mcp/README.md)。
+
+---
+
+## 8. 通用 Agent 与其他工具 (Codex, Devin, OpenCode 等)
 
 直接将仓库根目录的 [`AGENTS.md`](AGENTS.md) 复制到任意项目根目录下。现代智能体规范会自动在会话开始时将 `AGENTS.md` 注入上下文并永久遵守。

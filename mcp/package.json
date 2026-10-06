@@ -1,0 +1,26 @@
+{
+  "name": "scavenger-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) Server for Scavenger (清道夫) code hygiene and anti-rot guardrails",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "scavenger-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "scavenger",
+    "code-hygiene",
+    "clean-code",
+    "anti-rot",
+    "model-context-protocol"
+  ],
+  "author": "Lazily",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
