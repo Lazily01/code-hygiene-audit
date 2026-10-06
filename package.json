@@ -1,0 +1,24 @@
+{
+  "name": "scavenger",
+  "version": "1.0.0",
+  "description": "清道夫 (Scavenger) - 全周期 AI-Native 防屎山清道夫 & 架构守护体系",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/mcp.test.js",
+    "mcp": "node mcp/index.js"
+  },
+  "keywords": [
+    "scavenger",
+    "mcp",
+    "clean-code",
+    "code-hygiene",
+    "anti-rot",
+    "claude-code",
+    "cursor"
+  ],
+  "author": "Lazily",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
