@@ -8,12 +8,12 @@
 
 #### 全局用户级（推荐，所有项目可用）：
 ```bash
-git clone https://github.com/Lazily01/code-hygiene-audit.git ~/.claude/skills/scavenger
+git clone https://github.com/Lazily01/scavenger.git ~/.claude/skills/scavenger
 ```
 
 #### 项目级（随代码库分发）：
 ```bash
-git clone https://github.com/Lazily01/code-hygiene-audit.git .claude/skills/scavenger
+git clone https://github.com/Lazily01/scavenger.git .claude/skills/scavenger
 ```
 
 同时可将仓库中的 [`templates/CLAUDE.md.template`](templates/CLAUDE.md.template) 复制为项目根目录的 `CLAUDE.md`。
@@ -50,12 +50,12 @@ git clone https://github.com/Lazily01/code-hygiene-audit.git .claude/skills/scav
 
 #### 全局用户级：
 ```bash
-git clone https://github.com/Lazily01/code-hygiene-audit.git ~/.gemini/config/skills/scavenger
+git clone https://github.com/Lazily01/scavenger.git ~/.gemini/config/skills/scavenger
 ```
 
 #### 项目级：
 ```bash
-git clone https://github.com/Lazily01/code-hygiene-audit.git .gemini/skills/scavenger
+git clone https://github.com/Lazily01/scavenger.git .gemini/skills/scavenger
 ```
 
 ---

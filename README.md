@@ -47,7 +47,7 @@ AI 编码代理让这个问题以十倍速恶化：**它默认好造平行实现
 ### Claude Code
 ```bash
 # 全局用户级（推荐）
-git clone https://github.com/Lazily01/code-hygiene-audit.git ~/.claude/skills/scavenger
+git clone https://github.com/Lazily01/scavenger.git ~/.claude/skills/scavenger
 ```
 
 ### Cursor
@@ -61,7 +61,7 @@ git clone https://github.com/Lazily01/code-hygiene-audit.git ~/.claude/skills/sc
 
 ### Antigravity / Gemini CLI
 ```bash
-git clone https://github.com/Lazily01/code-hygiene-audit.git ~/.gemini/config/skills/scavenger
+git clone https://github.com/Lazily01/scavenger.git ~/.gemini/config/skills/scavenger
 ```
 
 ### 任何其他 Agent (Codex, Devin, OpenCode)
