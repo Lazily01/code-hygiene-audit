@@ -1,6 +1,6 @@
 {
   "name": "scavenger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "清道夫 (Scavenger) - 全周期 AI-Native 防屎山清道夫 & 架构守护体系",
   "type": "module",
   "scripts": {

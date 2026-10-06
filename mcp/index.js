@@ -10,6 +10,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 
+// 版本单一真相源：只读 mcp/package.json，严禁在此文件再硬编码版本号
+const SERVER_VERSION = JSON.parse(
+  fs.readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
+).version;
+
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', '.next', '.nuxt', '.output',
   'coverage', '.turbo', '.venv', 'venv', '__pycache__', '.idea', '.vscode',
@@ -23,14 +28,14 @@ const CODE_EXTS = new Set([
 
 // --- Utility Functions ---
 
-function walkDir(dir, fileList = [], baseDir = dir) {
+function walkDir(dir, fileList = []) {
   if (!fs.existsSync(dir)) return fileList;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (IGNORE_DIRS.has(entry.name)) continue;
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      walkDir(fullPath, fileList, baseDir);
+      walkDir(fullPath, fileList);
     } else {
       const ext = path.extname(entry.name).toLowerCase();
       if (CODE_EXTS.has(ext)) {
@@ -45,6 +50,15 @@ function relPath(baseDir, filePath) {
   return path.relative(baseDir, filePath).replace(/\\/g, '/');
 }
 
+/**
+ * 转义正则元字符：所有来自用户输入（symbolOrKeyword）或代码提取的标识符
+ * （可能含 $ 等元字符）在拼入 RegExp 前必须经过本函数，否则轻则结果错乱、
+ * 重则抛 "Unterminated group" 之类的 SyntaxError。
+ */
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // --- Tool Implementations ---
 
 /**
@@ -57,14 +71,29 @@ function scanTokenDrift({ directory = '.', allowedTokensFile = '' }) {
   }
 
   const files = walkDir(root);
-  const HEX_REGEX = /#([0-9a-fA-F]{3,8})\b/g;
-  const RGB_REGEX = /\brgba?\([^)]+\)/g;
+
+  // 判定哪些文件是「Token 定义文件」（其中的颜色定义是其本职，不算漂移）。
+  // 显式传入 allowedTokensFile 时只按它匹配；未传时退回文件名启发式（token/theme/colors）。
+  const tokenFileMatcher = allowedTokensFile
+    ? (f) => f.includes(allowedTokensFile)
+    : (f) => /(?:token|theme|colors)/i.test(f);
+
+  // 6/8 位 hex：高置信颜色，直接计入
+  const HEX_LONG_REGEX = /#([0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)\b/g;
+  // 3/4 位 hex：可能是 CSS id 选择器（#feed）、issue 引用（#123）等，
+  // 仅当行内存在颜色上下文关键词时才计入，避免大面积误报（宁少报不虚报）
+  const HEX_SHORT_REGEX = /#([0-9a-fA-F]{3,4})\b/g;
+  const RGB_FN_REGEX = /\brgba?\([^)]*\)/;
+  const COLOR_CONTEXT_REGEX = /(color|background|bg|border|fill|stroke|shadow|palette|rgba?\()/i;
+
   const findings = [];
+  const skippedFiles = [];
 
   for (const file of files) {
-    // 忽略本身就是 token 定义的文件
-    if (allowedTokensFile && file.includes(allowedTokensFile)) continue;
-    if (file.includes('token') || file.includes('theme') || file.includes('colors')) continue;
+    if (tokenFileMatcher(file)) {
+      skippedFiles.push(relPath(root, file));
+      continue;
+    }
 
     try {
       const content = fs.readFileSync(file, 'utf-8');
@@ -73,15 +102,27 @@ function scanTokenDrift({ directory = '.', allowedTokensFile = '' }) {
         const line = lines[i];
         if (line.trim().startsWith('//') || line.trim().startsWith('*')) continue;
 
+        const record = (value) => findings.push({
+          file: relPath(root, file),
+          line: i + 1,
+          value,
+          snippet: line.trim()
+        });
+
+        // rgb()/rgba() 几乎只有颜色语义，直接计入
+        const rgbMatch = line.match(RGB_FN_REGEX);
+        if (rgbMatch) record(rgbMatch[0]);
+
         let match;
-        HEX_REGEX.lastIndex = 0;
-        while ((match = HEX_REGEX.exec(line)) !== null) {
-          findings.push({
-            file: relPath(root, file),
-            line: i + 1,
-            value: match[0],
-            snippet: line.trim()
-          });
+        HEX_LONG_REGEX.lastIndex = 0;
+        while ((match = HEX_LONG_REGEX.exec(line)) !== null) {
+          record(match[0]);
+        }
+
+        const shortNeedsContext = COLOR_CONTEXT_REGEX.test(line);
+        HEX_SHORT_REGEX.lastIndex = 0;
+        while ((match = HEX_SHORT_REGEX.exec(line)) !== null) {
+          if (shortNeedsContext) record(match[0]);
         }
       }
     } catch {
@@ -89,11 +130,19 @@ function scanTokenDrift({ directory = '.', allowedTokensFile = '' }) {
     }
   }
 
-  if (findings.length === 0) {
-    return `✅ Token 扫描完成：未发现硬编码颜色漂移，设计系统纯洁度极佳。`;
+  // 跳过行为显式公示，杜绝静默误杀/静默失效
+  let notices = '';
+  if (allowedTokensFile && skippedFiles.length === 0) {
+    notices += `> ⚠️ allowedTokensFile \`${allowedTokensFile}\` 未匹配到任何文件，本次扫描未跳过任何 Token 定义文件。\n\n`;
+  } else if (skippedFiles.length > 0) {
+    notices += `> ℹ️ 已跳过 Token 定义文件: ${skippedFiles.map((f) => `\`${f}\``).join(', ')}\n\n`;
   }
 
-  let out = `### 🚨 发现 ${findings.length} 处设计 Token 漂移 (P2)\n\n`;
+  if (findings.length === 0) {
+    return `${notices}✅ Token 扫描完成：未发现硬编码颜色漂移，设计系统纯洁度极佳。`;
+  }
+
+  let out = `${notices}### 🚨 发现 ${findings.length} 处设计 Token 漂移 (P2)\n\n`;
   out += `| 文件:行 | 硬编码值 | 代码片段 |\n`;
   out += `|---|---|---|\n`;
   for (const f of findings.slice(0, 50)) {
@@ -122,7 +171,15 @@ function scanDeadCode({ directory = '.' }) {
     }
   }
 
-  const exportRegex = /export\s+(?:const|let|var|function|class|type|interface)\s+([a-zA-Z0-9_$]+)/g;
+  // 全库内容一次性拼接：每个符号只需两次词边界计数（全库 + 本文件），
+  // 避免原实现 O(符号数 × 文件数) 的两两正则比对在大型仓库上失控。
+  const allContent = [...fileContents.values()].join('\n');
+
+  const countWordOccurrences = (text, word) => {
+    const matches = text.match(new RegExp(`\\b${escapeRegExp(word)}\\b`, 'g'));
+    return matches ? matches.length : 0;
+  };
+
   const deadExports = [];
   const commentedCorpses = [];
 
@@ -149,23 +206,20 @@ function scanDeadCode({ directory = '.' }) {
       }
     }
 
-    // 检查导出的符号在其他文件中是否有引用
+    // 检查导出符号是否为死代码
+    const exportRegex = /export\s+(?:const|let|var|function|class|type|interface)\s+([a-zA-Z0-9_$]+)/g;
     let match;
-    exportRegex.lastIndex = 0;
     while ((match = exportRegex.exec(content)) !== null) {
       const symbol = match[1];
       if (symbol === 'default') continue;
 
-      let hasRef = false;
-      const refRegex = new RegExp(`\\b${symbol}\\b`);
+      const ownCount = countWordOccurrences(content, symbol);      // 本文件出现次数（含定义处）
+      const totalCount = countWordOccurrences(allContent, symbol); // 全库出现次数
 
-      for (const [otherFile, otherContent] of fileContents) {
-        if (otherFile === file) continue;
-        if (refRegex.test(otherContent)) {
-          hasRef = true;
-          break;
-        }
-      }
+      // 本文件内还有定义之外的使用（ownCount > 1），或其他文件有引用
+      // （totalCount > ownCount），二者任一成立即为活代码。
+      // 修复：原实现跳过本文件导致「文件内导出 + 文件内使用」被误判为零引用。
+      const hasRef = ownCount > 1 || totalCount > ownCount;
 
       if (!hasRef) {
         deadExports.push({
@@ -212,7 +266,10 @@ function checkTruthSplit({ symbolOrKeyword, directory = '.' }) {
 
   const files = walkDir(root);
   const occurrences = [];
-  const reg = new RegExp(`(?:const|function|class|type|interface|def)\\s+(${symbolOrKeyword})\\b`, 'i');
+  // 修复：用户/LLM 传入的可能是带签名的形式（如 "formatMoney(cents"），
+  // 未转义直接拼入 RegExp 会抛 SyntaxError，必须先转义。
+  const escaped = escapeRegExp(symbolOrKeyword);
+  const reg = new RegExp(`(?:const|function|class|type|interface|def)\\s+(${escaped})\\b`, 'i');
 
   for (const file of files) {
     try {
@@ -251,13 +308,20 @@ function checkTruthSplit({ symbolOrKeyword, directory = '.' }) {
 
 /**
  * 4. 自动生成标准审计清单报告
+ *    注意：本工具只覆盖可静态自动化的 P2（Token 漂移）与 P3（死代码）两路，
+ *    P0（渲染损坏，需浏览器）与 P1（真相分裂，需启发式检索）由 agent 按
+ *    SKILL.md 五路扫描补扫，报告中对二者显式标注，不得虚报覆盖范围。
  */
-function generateAuditReport({ directory = '.' }) {
-  const tokenReport = scanTokenDrift({ directory });
+function generateAuditReport({ directory = '.', allowedTokensFile = '' }) {
+  const tokenReport = scanTokenDrift({ directory, allowedTokensFile });
   const deadReport = scanDeadCode({ directory });
 
   return `# 清道夫 (Scavenger) 自动化审计速报\n\n` +
     `> 扫描目录: \`${directory}\` | 运行状态: 自动化基线就绪\n\n` +
+    `---\n\n` +
+    `### P0 · 渲染损坏 / P1 · 真相分裂\n\n` +
+    `⚠️ 本次为静态自动化扫描，**未覆盖** P0（需浏览器真实渲染检查）与 P1（需按启发式检索平行实现）。` +
+    `请由 agent 按 SKILL.md 五路扫描启发式补扫后再出具完整清单。\n\n` +
     `---\n\n` +
     `${tokenReport}\n\n` +
     `---\n\n` +
@@ -280,7 +344,7 @@ const TOOLS = [
         },
         allowedTokensFile: {
           type: 'string',
-          description: '允许定义 Token 的文件路径关键词（在此文件内的颜色定义将被忽略）'
+          description: 'Token 定义文件的路径关键词：匹配的文件将被跳过并在报告中公示。未提供时按文件名启发式（token/theme/colors）跳过'
         }
       }
     }
@@ -318,13 +382,17 @@ const TOOLS = [
   },
   {
     name: 'scavenger_generate_audit_report',
-    description: '综合执行清道夫全套静态巡检，输出标准的 P0~P3 分级待办清单与证据报告',
+    description: '综合执行可自动化的 P2 Token 漂移与 P3 死代码静态扫描并输出分级证据报告；P0 渲染损坏与 P1 真相分裂需 agent 按五路扫描启发式补扫（报告中已显式标注）',
     inputSchema: {
       type: 'object',
       properties: {
         directory: {
           type: 'string',
           description: '扫描目录，默认为 .'
+        },
+        allowedTokensFile: {
+          type: 'string',
+          description: 'Token 定义文件的路径关键词，透传给 Token 漂移扫描'
         }
       }
     }
@@ -350,7 +418,7 @@ function handleMessage(msg) {
         },
         serverInfo: {
           name: 'scavenger-mcp',
-          version: '1.0.0'
+          version: SERVER_VERSION
         }
       }
     });

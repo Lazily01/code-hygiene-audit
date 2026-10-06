@@ -129,7 +129,7 @@ git clone https://github.com/Lazily01/scavenger.git ~/.gemini/config/skills/scav
 
 ## 包含的开箱即用资产
 
-- [`mcp/`](mcp/)：**【新】零依赖原生 MCP Server**，为 Claude Code / Cursor / Windsurf 装备确定性的死代码、Token 漂移与真相分裂自动化探针。
+- [`mcp/`](mcp/)：**【新】零依赖原生 MCP Server**，为 Claude Code / Cursor / Windsurf 装备确定性的死代码、Token 漂移与真相分裂自动化探针。**盲区说明**：死代码扫描只覆盖导出符号（非导出死变量请互补 ESLint `no-unused-vars`）；P0 渲染损坏与 P1 真相分裂由 agent 按 SKILL.md 执行，server 不虚报覆盖，详见 [`mcp/README.md`](mcp/README.md)。
 - [`SKILL.md`](SKILL.md)：核心执行 Skill，包含指令体系、双模式引擎、五路扫描启发式与反哺闭环。
 - [`AGENTS.md`](AGENTS.md)：现代智能体统一规范入口。
 - [`INSTALL.md`](INSTALL.md)：覆盖 Claude Code、Cursor、Windsurf、Copilot、Cline、Antigravity 的配置指南。
