@@ -1,0 +1,27 @@
+# CLAUDE.md 模版：防屎山工程守护规则
+# 将此文件复制到你的项目根目录的 CLAUDE.md（或结合到 .geminirules / .cursorrules）
+# 核心原则：保持在 1 页以内，重点是“负向硬约束”与“单一真相声明”。
+
+## 常用命令 (Commands)
+- 构建：`npm run build` / `cargo check` / `go build ./...`
+- 运行测试：`npm test` / `pytest` / `go test ./...`
+- 静态检查：`npm run lint` / `tsc --noEmit` / `ruff check`
+
+## 架构与单一真相源 (Architecture & Single Sources of Truth)
+- **配色与样式 Token**：所有颜色、间距严格引用统一 Token（如 `src/styles/tokens.ts`），严禁在组件内手写 Hex/RGB 或魔法数字。
+- **状态归属**：所有全局业务状态归单一 Store 管理，严禁在局部组件内双写平行状态或私造缓存。
+- **数据契约**：接口模型以 `src/types/` 或 Schema 为唯一定义，禁止在业务代码中临时造平行接口类型。
+
+## 新需求与重构防腐军规 (Build & Refactor Invariants)
+1. **查重优先于新建**：写任何新逻辑、新组件前，必须先检索全仓；能复用现有逻辑坚决不造新轮子。
+2. **重构先看测试**：严禁在无安全网的情况下盲改核心逻辑；无测试时先补最小金标准测试（Baseline test）再动手。
+3. **零平行实现**：严禁创建 `xxx_v2`、`newService` 等平行文件并存；新逻辑替换旧逻辑必须原子化一步到位。
+4. **彻底物理删除**：旧代码直接删除，严禁用大段注释保留旧代码尸骸（Git 会记录历史）。
+5. **极简主义 (/simplify)**：避免过度抽象与嵌套地狱；优先使用 Early Return 扁平化逻辑。
+
+## AI 踩坑清单 (Things Claude Gets Wrong - 持续更新)
+> 规则：每当 AI 犯了同一类技术债或坏味道错误两次，立刻将防范规则补入此处：
+- 禁止生成未经调用的死代码、废弃 Mock 文件或测试残骸。
+- 修改逻辑时只修改共享定义源头，严禁在各个调用点就地打补丁。
+- 禁止修改已冻结的历史版本目录（如 `legacy/` 或 `v1/`）。
+- 禁止脱离设计 Token 编写任意内联样式。
