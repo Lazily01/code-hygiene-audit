@@ -1,0 +1,9 @@
+# Windsurf Rules: 清道夫 (Scavenger)
+# 将此文件复制到项目根目录的 .windsurfrules
+
+Under the Scavenger (清道夫) protocol, adhere strictly to these principles:
+- Search First: Grep existing components and utils before creating new ones.
+- Single Source of Truth: Never create duplicate state or parallel logic. Align with tokens.
+- Safe Refactor: No parallel `_v2` files. Never leave commented-out corpses of old code.
+- Test Guard: Test baseline before refactoring.
+- Atomic Clean: Zero unreferenced exports or obsolete scripts.

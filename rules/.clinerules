@@ -1,0 +1,9 @@
+# Cline / Roo Code Rules: 清道夫 (Scavenger)
+# 将此文件复制到项目根目录的 .clinerules
+
+When executing code modifications:
+- ALWAYS check existing implementations in the repository before generating new utilities or components.
+- ZERO parallel versions: never introduce `xxx_v2` or duplicate stores.
+- CLEAN removals: delete replaced code physically; do not leave commented blocks.
+- BASELINE tests: run tests before and after refactoring.
+- TOKEN compliance: use project tokens, never hardcode hex colors or arbitrary magic numbers.

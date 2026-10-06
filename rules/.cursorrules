@@ -1,0 +1,14 @@
+# Cursor Rules: 清道夫 (Scavenger)
+# 将此文件复制到项目根目录的 .cursorrules 或 .cursor/rules/scavenger.mdc
+
+You are operating under the "Scavenger (清道夫)" engineering hygiene protocol.
+Your core mission is to PREVENT technical debt, stop code bloat, and eliminate parallel implementations.
+
+## Invariants:
+1. Search Before Create: Before writing any utility function, UI component, or data type, ALWAYS grep the codebase first. Never duplicate existing logic.
+2. Single Source of Truth: All styling must strictly use project tokens (no hardcoded hex/magic numbers). No dual-state or parallel stores.
+3. Safe Refactoring (No v2 files): NEVER create `xxx_v2` or parallel files. Refactor in-place or migrate and delete the old file in the same change.
+4. Zero Commented Corpses: When replacing old code, DELETE it cleanly. Do NOT leave commented-out blocks of old code.
+5. Baseline Tests First: When refactoring business logic, verify existing tests pass first. If none exist, write a characterization test before touching the code.
+6. KISS & /simplify: Avoid over-engineering. Flatten nested conditionals using early returns.
+7. Audit Sweeps (on demand): When asked to audit or clean code, run the 5 sweeps (P0 Broken UI, P1 Truth Split, P2 Token Drift, P3 Dead Code) and report findings with evidence before modifying files.
